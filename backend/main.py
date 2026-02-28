@@ -1,9 +1,10 @@
 import os
 import shutil
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.vectorstores import FAISS
@@ -18,12 +19,21 @@ load_dotenv()
 
 app = FastAPI(title="RAG Chatbot API")
 
+# Add exception handler for better error messages
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)}
+    )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://localhost:3000",
         "https://finansearch1.vercel.app",
+        "https://finansearch2.vercel.app",
         "https://*.vercel.app"
     ],
     allow_credentials=True,
@@ -219,13 +229,36 @@ async def query(request: QueryRequest):
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-    os.makedirs(DATA_PATH, exist_ok=True)
-    path = os.path.join(DATA_PATH, file.filename)
-
-    with open(path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    return {"message": f"{file.filename} uploaded"}
+    try:
+        # Validate file type
+        allowed_extensions = ['.txt', '.pdf', '.md']
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        
+        if file_ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"File type {file_ext} not allowed. Use .txt, .pdf, or .md"
+            )
+        
+        # Create data directory if it doesn't exist
+        os.makedirs(DATA_PATH, exist_ok=True)
+        
+        # Save file
+        path = os.path.join(DATA_PATH, file.filename)
+        
+        with open(path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        
+        return {
+            "message": f"{file.filename} uploaded successfully",
+            "filename": file.filename,
+            "size": len(content)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
 @app.post("/rebuild-vectorstore")

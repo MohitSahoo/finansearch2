@@ -3,6 +3,9 @@ import axios from 'axios'
 import './App.css'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+// For file uploads, always use direct backend URL to avoid proxy issues
+const UPLOAD_BASE = import.meta.env.VITE_API_URL || API_BASE
 function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -93,20 +96,38 @@ function App() {
     const file = e.target.files[0]
     if (!file) return
 
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      alert('File too large. Maximum size is 10MB.')
+      e.target.value = ''
+      return
+    }
+
     const formData = new FormData()
     formData.append('file', file)
 
     setLoading(true)
     try {
-      await axios.post(`${API_BASE}/upload`, formData, {
+      const response = await axios.post(`${UPLOAD_BASE}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 30000, // 30 second timeout
       })
-      alert('File uploaded successfully!')
+      alert(`File uploaded successfully! ${response.data.message}`)
       fetchDocuments()
     } catch (error) {
-      alert('Error uploading file: ' + (error.response?.data?.detail || error.message))
+      console.error('Upload error:', error)
+      if (error.code === 'ECONNABORTED') {
+        alert('Upload timeout. Please try again or use a smaller file.')
+      } else if (error.response) {
+        alert('Error uploading file: ' + (error.response?.data?.detail || error.message))
+      } else if (error.request) {
+        alert('Network error. Please check your connection and backend URL.')
+      } else {
+        alert('Error: ' + error.message)
+      }
     } finally {
       setLoading(false)
       e.target.value = ''
