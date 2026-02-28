@@ -6,6 +6,9 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 // For file uploads, always use direct backend URL to avoid proxy issues
 const UPLOAD_BASE = import.meta.env.VITE_API_URL || API_BASE
+
+console.log('API_BASE:', API_BASE)
+console.log('VITE_API_URL:', import.meta.env.VITE_API_URL)
 function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -109,6 +112,8 @@ function App() {
 
     setLoading(true)
     try {
+      console.log('Uploading to:', `${UPLOAD_BASE}/upload`)
+      console.log('File:', file.name, file.size, file.type)
       const response = await axios.post(`${UPLOAD_BASE}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
