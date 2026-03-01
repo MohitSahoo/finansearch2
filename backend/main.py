@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.document_loaders import DirectoryLoader
+from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import FAISS
 from langchain_community.retrievers import BM25Retriever
 from langchain_text_splitters import CharacterTextSplitter
@@ -105,11 +105,24 @@ def setup_vector_store():
     if not os.path.isdir(DATA_PATH):
         raise HTTPException(status_code=404, detail=f"Data directory not found at {DATA_PATH}")
 
-    loader = DirectoryLoader(DATA_PATH, glob=["**/*.txt"])
-    docs = loader.load()
-
+    # Manually load all .txt files
+    docs = []
+    txt_files = [f for f in os.listdir(DATA_PATH) if f.endswith('.txt')]
+    
+    if not txt_files:
+        raise HTTPException(status_code=404, detail="No .txt documents found")
+    
+    for filename in txt_files:
+        file_path = os.path.join(DATA_PATH, filename)
+        try:
+            loader = TextLoader(file_path, encoding='utf-8')
+            docs.extend(loader.load())
+        except Exception as e:
+            print(f"Error loading {filename}: {e}")
+            continue
+    
     if not docs:
-        raise HTTPException(status_code=404, detail="No documents found")
+        raise HTTPException(status_code=404, detail="No documents could be loaded")
 
     text_splitter = CharacterTextSplitter(
         separator=config["separator"],
