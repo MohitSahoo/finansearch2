@@ -7,8 +7,6 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 // For file uploads, always use direct backend URL to avoid proxy issues
 const UPLOAD_BASE = import.meta.env.VITE_API_URL || API_BASE
 
-console.log('API_BASE:', API_BASE)
-console.log('VITE_API_URL:', import.meta.env.VITE_API_URL)
 function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -112,15 +110,13 @@ function App() {
 
     setLoading(true)
     try {
-      console.log('Uploading to:', `${UPLOAD_BASE}/upload`)
-      console.log('File:', file.name, file.size, file.type)
       const response = await axios.post(`${UPLOAD_BASE}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
         timeout: 30000, // 30 second timeout
       })
-      alert(`File uploaded successfully! ${response.data.message}`)
+      alert(`File uploaded successfully! ${response.data.message}\n\nRemember to click "Rebuild Vector Store" to use this file in queries.`)
       fetchDocuments()
     } catch (error) {
       console.error('Upload error:', error)
@@ -146,6 +142,46 @@ function App() {
       alert('Vector store rebuilt successfully!')
     } catch (error) {
       alert('Error rebuilding vector store: ' + (error.response?.data?.detail || error.message))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteDocument = async (filename) => {
+    if (!window.confirm(`Are you sure you want to delete ${filename}?`)) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      await axios.delete(`${API_BASE}/documents/${encodeURIComponent(filename)}`, {
+        timeout: 10000
+      })
+      alert(`${filename} deleted successfully!`)
+      await fetchDocuments()
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert('Error deleting file: ' + (error.response?.data?.detail || error.message))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteAllDocuments = async () => {
+    if (!window.confirm(`Are you sure you want to delete ALL ${documents.length} documents? This cannot be undone!`)) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await axios.delete(`${API_BASE}/documents`, {
+        timeout: 10000
+      })
+      alert(response.data.message)
+      await fetchDocuments()
+    } catch (error) {
+      console.error('Delete all error:', error)
+      alert('Error deleting files: ' + (error.response?.data?.detail || error.message))
     } finally {
       setLoading(false)
     }
@@ -326,14 +362,30 @@ function App() {
               {documents.length === 0 ? (
                 <p className="no-docs">No documents uploaded yet</p>
               ) : (
-                <ul>
-                  {documents.map((doc, index) => (
-                    <li key={index}>
-                      <span className="doc-name">{doc.name}</span>
-                      <span className="doc-size">{formatFileSize(doc.size)}</span>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <button 
+                    onClick={handleDeleteAllDocuments}
+                    className="delete-all-btn"
+                    disabled={loading}
+                  >
+                    Delete All Documents
+                  </button>
+                  <ul>
+                    {documents.map((doc, index) => (
+                      <li key={index}>
+                        <span className="doc-name">{doc.name}</span>
+                        <span className="doc-size">{formatFileSize(doc.size)}</span>
+                        <button 
+                          onClick={() => handleDeleteDocument(doc.name)}
+                          className="delete-btn"
+                          disabled={loading}
+                        >
+                          Delete
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
           </div>

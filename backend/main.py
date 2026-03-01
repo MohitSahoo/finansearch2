@@ -276,6 +276,53 @@ async def list_documents():
     }
 
 
+@app.delete("/documents/{filename}")
+async def delete_document(filename: str):
+    try:
+        # Decode URL-encoded filename
+        from urllib.parse import unquote
+        filename = unquote(filename)
+        
+        # Security check: ensure filename doesn't contain path traversal
+        if ".." in filename or "/" in filename or "\\" in filename:
+            raise HTTPException(status_code=400, detail="Invalid filename")
+        
+        file_path = os.path.join(DATA_PATH, filename)
+        
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail=f"File not found: {filename}")
+        
+        if not os.path.isfile(file_path):
+            raise HTTPException(status_code=400, detail="Not a file")
+        
+        os.remove(file_path)
+        
+        return {"message": f"{filename} deleted successfully", "filename": filename}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+
+
+@app.delete("/documents")
+async def delete_all_documents():
+    try:
+        if not os.path.exists(DATA_PATH):
+            return {"message": "No documents to delete", "count": 0}
+        
+        files = [f for f in os.listdir(DATA_PATH) if os.path.isfile(os.path.join(DATA_PATH, f))]
+        count = 0
+        
+        for filename in files:
+            file_path = os.path.join(DATA_PATH, filename)
+            os.remove(file_path)
+            count += 1
+        
+        return {"message": f"Deleted {count} documents", "count": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Delete all failed: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
