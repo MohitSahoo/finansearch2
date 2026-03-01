@@ -49,7 +49,7 @@ git push origin main
 
 After deployment, test:
 1. ✅ Visit frontend URL
-2. ✅ Upload a document (.txt, .pdf, or .md)
+2. ✅ Upload a document (.txt)
 3. ✅ Rebuild vector store
 4. ✅ Ask a question about the document
 5. ✅ Check retrieved documents display

@@ -2,8 +2,6 @@ langchain
 langchain-openai
 langchain-community
 faiss-cpu
-unstructured
-pypdf
 fastapi
 uvicorn[standard]
 python-multipart

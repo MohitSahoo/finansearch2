@@ -4,7 +4,7 @@ A full-stack Retrieval-Augmented Generation (RAG) chatbot application. This syst
 
 ## Features
 
-- **Document Upload**: Support for PDF, TXT, and Markdown files
+- **Document Upload**: Support for TXT files
 - **RAG-based Q&A**: Ask questions about your uploaded documents
 - **Hybrid Search System** ⭐ (Unique Feature):
   - **Semantic Search**: AI-powered understanding using embeddings
@@ -75,7 +75,7 @@ A full-stack Retrieval-Augmented Generation (RAG) chatbot application. This syst
 5. Create a `data` folder and add your documents:
    ```bash
    mkdir data
-   # Add your .txt, .pdf, or .md files to the data folder
+   # Add your .txt files to the data folder
    ```
 
 6. Run the FastAPI server:

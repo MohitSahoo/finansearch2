@@ -105,7 +105,7 @@ def setup_vector_store():
     if not os.path.isdir(DATA_PATH):
         raise HTTPException(status_code=404, detail=f"Data directory not found at {DATA_PATH}")
 
-    loader = DirectoryLoader(DATA_PATH, glob=["**/*.txt", "**/*.pdf", "**/*.md"])
+    loader = DirectoryLoader(DATA_PATH, glob=["**/*.txt"])
     docs = loader.load()
 
     if not docs:
@@ -224,14 +224,14 @@ async def query(request: QueryRequest):
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     try:
-        # Validate file type
-        allowed_extensions = ['.txt', '.pdf', '.md']
+        # Validate file type - only .txt files
+        allowed_extensions = ['.txt']
         file_ext = os.path.splitext(file.filename)[1].lower()
         
         if file_ext not in allowed_extensions:
             raise HTTPException(
                 status_code=400, 
-                detail=f"File type {file_ext} not allowed. Use .txt, .pdf, or .md"
+                detail=f"File type {file_ext} not allowed. Only .txt files are supported."
             )
         
         # Create data directory if it doesn't exist

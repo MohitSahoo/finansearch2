@@ -342,9 +342,9 @@ function App() {
                   <input
                     type="file"
                     onChange={handleFileUpload}
-                    accept=".txt,.pdf,.md"
+                    accept=".txt"
                   />
-                  Choose File (.txt, .pdf, .md)
+                  Choose File (.txt only)
                 </label>
               </div>
 
